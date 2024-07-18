@@ -68,13 +68,13 @@ static uint8_t dis_sw_rev[CONFIG_BT_DIS_STR_MAX] =
 static uint8_t dis_udi[CONFIG_BT_DIS_STR_MAX] =
 	CONFIG_BT_DIS_UDI_STR;
 #endif
-#if defined(BT_DIS_SYSTEM_ID)
+#if defined(CONFIG_BT_DIS_SYSTEM_ID)
 static uint8_t dis_system_id[CONFIG_BT_DIS_STR_MAX] =
 	CONFIG_BT_DIS_SYSTEM_ID_STR;
 #endif
-#if defined(BT_DIS_IEEE_RCDL)
+#if defined(CONFIG_BT_DIS_IEEE_RCDL)
 static uint8_t dis_ieee_rcdl[CONFIG_BT_DIS_STR_MAX] =
-	BT_DIS_IEEE_RCDL_STR;
+	CONFIG_BT_DIS_IEEE_RCDL_STR;
 #endif
 
 #define BT_DIS_MODEL_REF		dis_model

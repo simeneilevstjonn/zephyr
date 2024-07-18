@@ -68,6 +68,14 @@ static uint8_t dis_sw_rev[CONFIG_BT_DIS_STR_MAX] =
 static uint8_t dis_udi[CONFIG_BT_DIS_STR_MAX] =
 	CONFIG_BT_DIS_UDI_STR;
 #endif
+#if defined(BT_DIS_SYSTEM_ID)
+static uint8_t dis_system_id[CONFIG_BT_DIS_STR_MAX] =
+	CONFIG_BT_DIS_SYSTEM_ID_STR;
+#endif
+#if defined(BT_DIS_IEEE_RCDL)
+static uint8_t dis_ieee_rcdl[CONFIG_BT_DIS_STR_MAX] =
+	BT_DIS_IEEE_RCDL_STR;
+#endif
 
 #define BT_DIS_MODEL_REF		dis_model
 #define BT_DIS_MANUF_REF		dis_manuf
@@ -76,6 +84,8 @@ static uint8_t dis_udi[CONFIG_BT_DIS_STR_MAX] =
 #define BT_DIS_HW_REV_STR_REF		dis_hw_rev
 #define BT_DIS_SW_REV_STR_REF		dis_sw_rev
 #define BT_DIS_UDI_STR_REF			dis_udi
+#define BT_DIS_SYSTEM_ID_STR_REF	dis_system_id
+#define BT_DIS_IEEE_RCDL_STR_REF	dis_ieee_rcdl
 
 #else /* CONFIG_BT_DIS_SETTINGS */
 
@@ -86,6 +96,8 @@ static uint8_t dis_udi[CONFIG_BT_DIS_STR_MAX] =
 #define BT_DIS_HW_REV_STR_REF		CONFIG_BT_DIS_HW_REV_STR
 #define BT_DIS_SW_REV_STR_REF		CONFIG_BT_DIS_SW_REV_STR
 #define BT_DIS_UDI_STR_REF			CONFIG_BT_DIS_UDI_STR
+#define BT_DIS_SYSTEM_ID_STR_REF	CONFIG_BT_DIS_SYSTEM_ID_STR
+#define BT_DIS_IEEE_RCDL_STR_REF	CONFIG_BT_DIS_IEEE_RCDL_STR
 
 #endif /* CONFIG_BT_DIS_SETTINGS */
 
@@ -148,6 +160,16 @@ BT_GATT_SERVICE_DEFINE(dis_svc,
 	BT_GATT_CHARACTERISTIC(BT_UUID_UDI_FOR_MEDICAL_DEVICES,
 			       BT_GATT_CHRC_READ, BT_GATT_PERM_READ,
 			       read_str, NULL, BT_DIS_UDI_STR_REF),
+#endif
+#if defined(CONFIG_BT_DIS_SYSTEM_ID)
+	BT_GATT_CHARACTERISTIC(BT_UUID_DIS_SYSTEM_ID,
+			       BT_GATT_CHRC_READ, BT_GATT_PERM_READ,
+			       read_str, NULL, BT_DIS_SYSTEM_ID_STR_REF),
+#endif
+#if defined(CONFIG_BT_DIS_IEEE_RCDL)
+	BT_GATT_CHARACTERISTIC(BT_UUID_GATT_IEEE_RCDL,
+			       BT_GATT_CHRC_READ, BT_GATT_PERM_READ,
+			       read_str, NULL, BT_DIS_IEEE_RCDL_STR_REF),
 #endif
 
 );
@@ -252,6 +274,34 @@ static int dis_set(const char *name, size_t len_rd,
 			dis_udi[len] = '\0';
 
 			LOG_DBG("UDI for Medical Devices set to %s", dis_udi);
+		}
+		return 0;
+	}
+#endif
+#if defined(CONFIG_BT_DIS_SYSTEM_ID)
+	if (!strncmp(name, "sysid", nlen)) {
+		len = read_cb(store, &dis_system_id, sizeof(dis_system_id) - 1);
+		if (len < 0) {
+			LOG_ERR("Failed to read System ID from storage"
+				       " (err %zd)", len);
+		} else {
+			dis_system_id[len] = '\0';
+
+			LOG_DBG("System ID set to %s", dis_system_id);
+		}
+		return 0;
+	}
+#endif
+#if defined(CONFIG_BT_DIS_IEEE_RCDL)
+	if (!strncmp(name, "ieeercdl", nlen)) {
+		len = read_cb(store, &dis_ieee_rcdl, sizeof(dis_ieee_rcdl) - 1);
+		if (len < 0) {
+			LOG_ERR("Failed to read IEEE 11073-20601 Regulatory Certification Data List from storage"
+				       " (err %zd)", len);
+		} else {
+			dis_ieee_rcdl[len] = '\0';
+
+			LOG_DBG("IEEE 11073-20601 Regulatory Certification Data List set to %s", dis_ieee_rcdl);
 		}
 		return 0;
 	}

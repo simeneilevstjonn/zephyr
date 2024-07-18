@@ -142,4 +142,15 @@ config BT_DIS_SW_REV_STR
 	help
 	  Enable software revision characteristic in Device Information Service.
 
+config BT_DIS_UDI
+	bool "DIS UDI for Medical Devices characteristic"
+	help
+	  Enable UDI for Medical Devices characteristic in Device Information Service.
+
+config BT_DIS_UDI_STR
+	string "UDI for Medical Devices"
+	depends on BT_DIS_UDI
+	help
+	  characteristic in Device Information Service.
+
 endif # BT_DIS

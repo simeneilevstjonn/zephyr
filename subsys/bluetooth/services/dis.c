@@ -45,6 +45,21 @@ static struct dis_pnp dis_pnp_id = {
 };
 #endif
 
+#if CONFIG_BT_DIS_SYSTEM_ID
+#define SYSTEM_ID_OUI_SIZE 3
+#define SYSTEM_ID_IDENTIFIER_SIZE 5
+
+struct dis_system_id_t {
+	uint64_t system_id_oui : 24;
+	uint64_t system_id_identifier : 40;
+} __packed;
+
+static struct dis_system_id_t dis_system_id {
+	.system_id_oui = CONFIG_BT_DIS_OUI,
+	.system_id_identifier = CONFIG_BT_DIS_IDENTIFIER,
+};
+#endif
+
 #if defined(CONFIG_BT_DIS_SETTINGS)
 static uint8_t dis_model[CONFIG_BT_DIS_STR_MAX] = CONFIG_BT_DIS_MODEL;
 static uint8_t dis_manuf[CONFIG_BT_DIS_STR_MAX] = CONFIG_BT_DIS_MANUF;
@@ -68,10 +83,6 @@ static uint8_t dis_sw_rev[CONFIG_BT_DIS_STR_MAX] =
 static uint8_t dis_udi[CONFIG_BT_DIS_STR_MAX] =
 	CONFIG_BT_DIS_UDI_STR;
 #endif
-#if defined(CONFIG_BT_DIS_SYSTEM_ID)
-static uint8_t dis_system_id[CONFIG_BT_DIS_STR_MAX] =
-	CONFIG_BT_DIS_SYSTEM_ID_STR;
-#endif
 #if defined(CONFIG_BT_DIS_IEEE_RCDL)
 static uint8_t dis_ieee_rcdl[CONFIG_BT_DIS_STR_MAX] =
 	CONFIG_BT_DIS_IEEE_RCDL_STR;
@@ -84,7 +95,6 @@ static uint8_t dis_ieee_rcdl[CONFIG_BT_DIS_STR_MAX] =
 #define BT_DIS_HW_REV_STR_REF		dis_hw_rev
 #define BT_DIS_SW_REV_STR_REF		dis_sw_rev
 #define BT_DIS_UDI_STR_REF			dis_udi
-#define BT_DIS_SYSTEM_ID_STR_REF	dis_system_id
 #define BT_DIS_IEEE_RCDL_STR_REF	dis_ieee_rcdl
 
 #else /* CONFIG_BT_DIS_SETTINGS */
@@ -96,7 +106,6 @@ static uint8_t dis_ieee_rcdl[CONFIG_BT_DIS_STR_MAX] =
 #define BT_DIS_HW_REV_STR_REF		CONFIG_BT_DIS_HW_REV_STR
 #define BT_DIS_SW_REV_STR_REF		CONFIG_BT_DIS_SW_REV_STR
 #define BT_DIS_UDI_STR_REF			CONFIG_BT_DIS_UDI_STR
-#define BT_DIS_SYSTEM_ID_STR_REF	CONFIG_BT_DIS_SYSTEM_ID_STR
 #define BT_DIS_IEEE_RCDL_STR_REF	CONFIG_BT_DIS_IEEE_RCDL_STR
 
 #endif /* CONFIG_BT_DIS_SETTINGS */
@@ -116,6 +125,16 @@ static ssize_t read_pnp_id(struct bt_conn *conn,
 {
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, &dis_pnp_id,
 				 sizeof(dis_pnp_id));
+}
+#endif
+
+#if CONFIG_BT_DIS_SYSTEM_ID
+static ssize_t read_system_id(struct bt_conn *conn,
+			   const struct bt_gatt_attr *attr, void *buf,
+			   uint16_t len, uint16_t offset)
+{
+	return bt_gatt_attr_read(conn, attr, buf, len, offset, &dis_system_id,
+				 sizeof(dis_system_id));
 }
 #endif
 
@@ -169,7 +188,7 @@ BT_GATT_SERVICE_DEFINE(dis_svc,
 #if defined(CONFIG_BT_DIS_IEEE_RCDL)
 	BT_GATT_CHARACTERISTIC(BT_UUID_GATT_IEEE_RCDL,
 			       BT_GATT_CHRC_READ, BT_GATT_PERM_READ,
-			       read_str, NULL, BT_DIS_IEEE_RCDL_STR_REF),
+			       read_system_id, NULL, &dis_system_id),
 #endif
 
 );
@@ -279,15 +298,23 @@ static int dis_set(const char *name, size_t len_rd,
 	}
 #endif
 #if defined(CONFIG_BT_DIS_SYSTEM_ID)
-	if (!strncmp(name, "sysid", nlen)) {
-		len = read_cb(store, &dis_system_id, sizeof(dis_system_id) - 1);
+	if (!strncmp(name, "sysid_oui", nlen)) {
+		len = read_cb(store, &dis_system_id.system_id_oui, SYSTEM_ID_OUI_SIZE);
 		if (len < 0) {
-			LOG_ERR("Failed to read System ID from storage"
+			LOG_ERR("Failed to read System ID OUI from storage"
 				       " (err %zd)", len);
 		} else {
-			dis_system_id[len] = '\0';
-
-			LOG_DBG("System ID set to %s", dis_system_id);
+			LOG_DBG("System ID set to %06X", dis_system_id.system_id_oui);
+		}
+		return 0;
+	}
+	if (!strncmp(name, "sysid_identifier", nlen)) {
+		len = read_cb(store, &dis_system_id.system_id_identifier, SYSTEM_ID_IDENTIFIER_SIZE);
+		if (len < 0) {
+			LOG_ERR("Failed to read System ID identifier from storage"
+				       " (err %zd)", len);
+		} else {
+			LOG_DBG("System ID set to %10X", dis_system_id.system_id_identifier);
 		}
 		return 0;
 	}

@@ -157,12 +157,30 @@ config BT_DIS_SYSTEM_ID
 	bool "DIS System ID characteristic"
 	help
 	  Enable System ID characteristic in Device Information Service.
+	  The System ID characteristic is used to represent an extended unique identifier (EUI) of the system
+	  implementing the service that contains this characteristic. This 64-bit structure is an EUI-64 which consists
+	  of an Organizationally Unique Identifier (OUI) concatenated with a manufacturer-defined identifier.
 
-config BT_DIS_SYSTEM_ID_STR
-	string "System ID"
+config BT_DIS_SYSTEM_ID_OUI
+	hex "Organizationally Unique Identifier (OUI) of the manufacturer."
+	range 0 0xFFFFFF
+	default 0
 	depends on BT_DIS_SYSTEM_ID
 	help
-	  System ID characteristic in Device Information Service. Shall contain an Organisationally Unique Identifier (OUI) followed by a manufacturer-defined indentifier unique for the device.
+	  The OUI is a 24-bit number issued by the IEEE Registration Authority.
+	  System ID characteristic in Device Information Service. 
+	  Shall contain an Organisationally Unique Identifier (OUI) followed by a manufacturer-defined indentifier unique for the device.
+
+config BT_DIS_SYSTEM_ID_IDENTIFIER
+	hex "Manufacturer-defined unique identifier."
+	range 0 0xFFFFFFFFFF
+	default 0
+	depends on BT_DIS_SYSTEM_ID
+	help
+	  The manufacturer-defined unique identifier is 40 bits long.
+	  The System ID characteristic shall represent a structure containing an 
+	  Organizationally Unique Identifier (OUI) followed by a manufacturer-defined identifier 
+	  and is unique for each individual instance of the product.
 
 config BT_DIS_IEEE_RCDL
 	bool "DIS IEEE 11073-20601 Regulatory Certification Data List characteristic"

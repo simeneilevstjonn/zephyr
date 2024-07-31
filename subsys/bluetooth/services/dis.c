@@ -153,46 +153,54 @@ static ssize_t read_system_id(struct bt_conn *conn,
 #define BT_DIS_UDI_FLAG_AUTHORITY	(!!BT_DIS_UDI_AUTHORITY_STR_REF[0])
 #define BT_DIS_UDI_FLAGS			(BT_DIS_UDI_FLAG_LABEL | (BT_DIS_UDI_FLAG_DI << 1) | (BT_DIS_UDI_FLAG_ISSUER << 2) | (BT_DIS_UDI_FLAG_AUTHORITY << 3))
 
-static uint8_t bt_dis_udi_merged[CONFIG_BT_DIS_STR_MAX * 4 + 1];
+#if defined(CONFIG_BT_SETTINGS)
+static uint8_t bt_dis_udi_merged[MIN(CONFIG_BT_DIS_STR_MAX * 4 + 1, MIN(BT_ATT_MAX_ATTRIBUTE_LEN, CONFIG_BT_L2CAP_TX_MTU))];
+#else
+static uint8_t bt_dis_udi_merged[MIN(BT_ATT_MAX_ATTRIBUTE_LEN, CONFIG_BT_L2CAP_TX_MTU)];
+#endif
+
+static size_t bt_dis_udi_merged_size = 0;
 
 static ssize_t read_udi(struct bt_conn *conn,
 			   const struct bt_gatt_attr *attr, void *buf,
 			   uint16_t len, uint16_t offset)
 {
-	size_t idx = 0;
-
-	bt_dis_udi_merged[idx++] = BT_DIS_UDI_FLAGS;
-
-	if (BT_DIS_UDI_FLAG_LABEL) 
+	if (!bt_dis_udi_merged_size) 
 	{
-		size_t l = strlen(BT_DIS_UDI_LABEL_STR_REF) + 1;
-		memcpy(bt_dis_udi_merged + idx, BT_DIS_UDI_LABEL_STR_REF, l);
-		idx += l;
-	}
+		bt_dis_udi_merged[bt_dis_udi_merged_size++] = BT_DIS_UDI_FLAGS;
+		
+		if (BT_DIS_UDI_FLAG_LABEL) 
+		{
+			size_t l = MIN(strlen(BT_DIS_UDI_LABEL_STR_REF) + 1, sizeof(bt_dis_udi_merged) - bt_dis_udi_merged_size);
+			memcpy(bt_dis_udi_merged + bt_dis_udi_merged_size, BT_DIS_UDI_LABEL_STR_REF, l);
+			bt_dis_udi_merged_size += l;
+		}
 
-	if (BT_DIS_UDI_FLAG_DI) 
-	{
-		size_t l = strlen(BT_DIS_UDI_DI_STR_REF) + 1;
-		memcpy(bt_dis_udi_merged + idx, BT_DIS_UDI_DI_STR_REF, l);
-		idx += l;
-	}
+		if (BT_DIS_UDI_FLAG_DI) 
+		{
+			size_t l = MIN(strlen(BT_DIS_UDI_DI_STR_REF) + 1, sizeof(bt_dis_udi_merged) - bt_dis_udi_merged_size);
+			memcpy(bt_dis_udi_merged + bt_dis_udi_merged_size, BT_DIS_UDI_DI_STR_REF, l);
+			bt_dis_udi_merged_size += l;
+		}
 
-	if (BT_DIS_UDI_FLAG_ISSUER) 
-	{
-		size_t l = strlen(BT_DIS_UDI_ISSUER_STR_REF) + 1;
-		memcpy(bt_dis_udi_merged + idx, BT_DIS_UDI_ISSUER_STR_REF, l);
-		idx += l;
-	}
+		if (BT_DIS_UDI_FLAG_ISSUER) 
+		{
+			size_t l = MIN(strlen(BT_DIS_UDI_AUTHORITY_STR_REF) + 1, sizeof(bt_dis_udi_merged) - bt_dis_udi_merged_size);
+			memcpy(bt_dis_udi_merged + bt_dis_udi_merged_size, BT_DIS_UDI_ISSUER_STR_REF, l);
+			bt_dis_udi_merged_size += l;
+		}
 
-	if (BT_DIS_UDI_FLAG_AUTHORITY) 
-	{
-		size_t l = strlen(BT_DIS_UDI_AUTHORITY_STR_REF) + 1;
-		memcpy(bt_dis_udi_merged + idx, BT_DIS_UDI_AUTHORITY_STR_REF, l);
-		idx += l;
+		if (BT_DIS_UDI_FLAG_AUTHORITY) 
+		{
+			size_t l = MIN(strlen(BT_DIS_UDI_AUTHORITY_STR_REF) + 1, sizeof(bt_dis_udi_merged) - bt_dis_udi_merged_size);
+			memcpy(bt_dis_udi_merged + bt_dis_udi_merged_size, BT_DIS_UDI_AUTHORITY_STR_REF, l);
+			bt_dis_udi_merged_size += l;
+		}
 	}
+	
 
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, &bt_dis_udi_merged,
-				 idx);
+				 bt_dis_udi_merged_size);
 }
 #endif
 
@@ -342,13 +350,31 @@ static int dis_set(const char *name, size_t len_rd,
 	}
 #endif
 #if defined(CONFIG_BT_DIS_UDI)
+	const size_t currently_used_udi_merged_space = 1 + 
+		strlen(BT_DIS_UDI_LABEL_STR_REF) + 
+		strlen(BT_DIS_UDI_DI_STR_REF) + 
+		strlen(BT_DIS_UDI_ISSUER_STR_REF) + 
+		strlen(BT_DIS_UDI_AUTHORITY_STR_REF) + 
+		BT_DIS_UDI_FLAG_LABEL + 
+		BT_DIS_UDI_FLAG_DI + 
+		BT_DIS_UDI_FLAG_ISSUER + 
+		BT_DIS_UDI_FLAG_AUTHORITY;
+
 	if (!strncmp(name, "udi_label", nlen)) {
+		size_t in_use_without_this = currently_used_udi_merged_space - strlen(BT_DIS_UDI_LABEL_STR_REF) - BT_DIS_UDI_FLAG_LABEL;
+		if (sizeof(bt_dis_udi_merged) < in_use_without_this + strlen(store) + 1) 
+		{
+			LOG_ERR("Failed to set UDI Label. Not enough space. The sum of the 4 DIS UDI for Medical Devices strings may not exceed the maximum attribute length or maximum transmit MTU.");
+			return 0;
+		}
+
 		len = read_cb(store, &dis_udi_label, sizeof(dis_udi_label) - 1);
 		if (len < 0) {
 			LOG_ERR("Failed to read UDI Label from storage"
 				       " (err %zd)", len);
 		} else {
 			dis_udi_label[len] = '\0';
+			bt_dis_udi_merged_size = 0;
 
 			LOG_DBG("UDI Label set to %s", dis_udi_label);
 		}
@@ -356,12 +382,20 @@ static int dis_set(const char *name, size_t len_rd,
 	}
 
 	if (!strncmp(name, "udi_di", nlen)) {
+		size_t in_use_without_this = currently_used_udi_merged_space - strlen(BT_DIS_UDI_DI_STR_REF) - BT_DIS_UDI_FLAG_DI;
+		if (sizeof(bt_dis_udi_merged) < in_use_without_this + strlen(store) + 1) 
+		{
+			LOG_ERR("Failed to set UDI Device Identifier. Not enough space. The sum of the 4 DIS UDI for Medical Devices strings may not exceed the maximum attribute length or maximum transmit MTU.");
+			return 0;
+		} 
+
 		len = read_cb(store, &dis_udi_di, sizeof(dis_udi_di) - 1);
 		if (len < 0) {
 			LOG_ERR("Failed to read UDI Device Identifier from storage"
 				       " (err %zd)", len);
 		} else {
 			dis_udi_di[len] = '\0';
+			bt_dis_udi_merged_size = 0;
 
 			LOG_DBG("UDI Device Identifier set to %s", dis_udi_di);
 		}
@@ -369,12 +403,20 @@ static int dis_set(const char *name, size_t len_rd,
 	}
 
 	if (!strncmp(name, "udi_issuer", nlen)) {
+		size_t in_use_without_this = currently_used_udi_merged_space - strlen(BT_DIS_UDI_ISSUER_STR_REF) - BT_DIS_UDI_FLAG_ISSUER;
+		if (sizeof(bt_dis_udi_merged) < in_use_without_this + strlen(store) + 1) 
+		{
+			LOG_ERR("Failed to set UDI Issuer. Not enough space. The sum of the 4 DIS UDI for Medical Devices strings may not exceed the maximum attribute length or maximum transmit MTU.");
+			return 0;
+		} 
+
 		len = read_cb(store, &dis_udi_issuer, sizeof(dis_udi_issuer) - 1);
 		if (len < 0) {
 			LOG_ERR("Failed to read UDI Issuer from storage"
 				       " (err %zd)", len);
 		} else {
 			dis_udi_issuer[len] = '\0';
+			bt_dis_udi_merged_size = 0;
 
 			LOG_DBG("UDI Issuer set to %s", dis_udi_issuer);
 		}
@@ -382,12 +424,20 @@ static int dis_set(const char *name, size_t len_rd,
 	}
 
 	if (!strncmp(name, "udi_authority", nlen)) {
+		size_t in_use_without_this = currently_used_udi_merged_space - strlen(BT_DIS_UDI_AUTHORITY_STR_REF) - BT_DIS_UDI_FLAG_AUTHORITY;
+		if (sizeof(bt_dis_udi_merged) < in_use_without_this + strlen(store) + 1) 
+		{
+			LOG_ERR("Failed to set UDI Authority. Not enough space. The sum of the 4 DIS UDI for Medical Devices strings may not exceed the maximum attribute length or maximum transmit MTU.");
+			return 0;
+		} 
+
 		len = read_cb(store, &dis_udi_authority, sizeof(dis_udi_authority) - 1);
 		if (len < 0) {
 			LOG_ERR("Failed to read UDI Authority from storage"
 				       " (err %zd)", len);
 		} else {
 			dis_udi_authority[len] = '\0';
+			bt_dis_udi_merged_size = 0;
 
 			LOG_DBG("UDI Authority set to %s", dis_udi_authority);
 		}

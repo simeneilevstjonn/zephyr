@@ -147,11 +147,31 @@ config BT_DIS_UDI
 	help
 	  Enable UDI for Medical Devices characteristic in Device Information Service.
 
-config BT_DIS_UDI_STR
-	string "UDI for Medical Devices"
+config BT_DIS_UDI_LABEL_STR
+	string "UDI Label"
 	depends on BT_DIS_UDI
 	help
-	  Enable UDI for Medical Devices characteristic in Device Information Service.
+	  String value matching the UDI in human readable form
+	  as assigned to the product by a recognized UDI Issuer.
+
+config BT_DIS_UDI_DI_STR
+	string "UDI Device Identifier"
+	depends on BT_DIS_UDI
+	help
+	  A fixed portion of a UDI that identifies the labeler and the
+	  specific version or model of a device.
+
+config BT_DIS_UDI_ISSUER_STR
+	string "UDI Issuer"
+	depends on BT_DIS_UDI
+	help
+	  OID representing the UDI Issuing Organization, such as GS1.
+
+config BT_DIS_UDI_AUTHORITY_STR
+	string "UDI Authority"
+	depends on BT_DIS_UDI
+	help
+	  OID representing the regional UDI Authority, such as the US FDA.
 
 config BT_DIS_SYSTEM_ID
 	bool "DIS System ID characteristic"

@@ -80,8 +80,14 @@ static uint8_t dis_sw_rev[CONFIG_BT_DIS_STR_MAX] =
 	CONFIG_BT_DIS_SW_REV_STR;
 #endif
 #if defined(CONFIG_BT_DIS_UDI)
-static uint8_t dis_udi[CONFIG_BT_DIS_STR_MAX] =
-	CONFIG_BT_DIS_UDI_STR;
+static uint8_t dis_udi_label[CONFIG_BT_DIS_STR_MAX] =
+	CONFIG_BT_DIS_UDI_LABEL_STR;
+static uint8_t dis_udi_di[CONFIG_BT_DIS_STR_MAX] =
+	CONFIG_BT_DIS_UDI_DI_STR;
+static uint8_t dis_udi_issuer[CONFIG_BT_DIS_STR_MAX] =
+	CONFIG_BT_DIS_UDI_ISSUER_STR;
+static uint8_t dis_udi_authority[CONFIG_BT_DIS_STR_MAX] =
+	CONFIG_BT_DIS_UDI_AUTHORITY_STR;
 #endif
 #if defined(CONFIG_BT_DIS_IEEE_RCDL)
 static uint8_t dis_ieee_rcdl[CONFIG_BT_DIS_STR_MAX] =
@@ -94,7 +100,10 @@ static uint8_t dis_ieee_rcdl[CONFIG_BT_DIS_STR_MAX] =
 #define BT_DIS_FW_REV_STR_REF		dis_fw_rev
 #define BT_DIS_HW_REV_STR_REF		dis_hw_rev
 #define BT_DIS_SW_REV_STR_REF		dis_sw_rev
-#define BT_DIS_UDI_STR_REF			dis_udi
+#define BT_DIS_UDI_LABEL_STR_REF	dis_udi_label
+#define BT_DIS_UDI_DI_STR_REF		dis_udi_di
+#define BT_DIS_UDI_ISSUER_STR_REF	dis_udi_issuer
+#define BT_DIS_UDI_AUTHORITY_STR_REF	dis_udi_authority
 #define BT_DIS_IEEE_RCDL_STR_REF	dis_ieee_rcdl
 
 #else /* CONFIG_BT_DIS_SETTINGS */
@@ -105,7 +114,10 @@ static uint8_t dis_ieee_rcdl[CONFIG_BT_DIS_STR_MAX] =
 #define BT_DIS_FW_REV_STR_REF		CONFIG_BT_DIS_FW_REV_STR
 #define BT_DIS_HW_REV_STR_REF		CONFIG_BT_DIS_HW_REV_STR
 #define BT_DIS_SW_REV_STR_REF		CONFIG_BT_DIS_SW_REV_STR
-#define BT_DIS_UDI_STR_REF			CONFIG_BT_DIS_UDI_STR
+#define BT_DIS_UDI_LABEL_STR_REF	CONFIG_BT_DIS_UDI_LABEL_STR
+#define BT_DIS_UDI_DI_STR_REF		CONFIG_BT_DIS_UDI_DI_STR
+#define BT_DIS_UDI_ISSUER_STR_REF	CONFIG_BT_DIS_UDI_ISSUER_STR
+#define BT_DIS_UDI_AUTHORITY_STR_REF	CONFIG_BT_DIS_UDI_AUTHORITY_STR
 #define BT_DIS_IEEE_RCDL_STR_REF	CONFIG_BT_DIS_IEEE_RCDL_STR
 
 #endif /* CONFIG_BT_DIS_SETTINGS */
@@ -135,6 +147,56 @@ static ssize_t read_system_id(struct bt_conn *conn,
 {
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, &dis_system_id,
 				 sizeof(dis_system_id));
+}
+#endif
+
+#if CONFIG_BT_DIS_UDI
+#define BT_DIS_UDI_FLAG_LABEL		(!!BT_DIS_UDI_LABEL_STR_REF[0])
+#define BT_DIS_UDI_FLAG_DI			(!!BT_DIS_UDI_DI_STR_REF[0])
+#define BT_DIS_UDI_FLAG_ISSUER		(!!BT_DIS_UDI_ISSUER_STR_REF[0])
+#define BT_DIS_UDI_FLAG_AUTHORITY	(!!BT_DIS_UDI_AUTHORITY_STR_REF[0])
+#define BT_DIS_UDI_FLAGS			(BT_DIS_UDI_FLAG_LABEL | (BT_DIS_UDI_FLAG_DI << 1) | (BT_DIS_UDI_FLAG_ISSUER << 2) | (BT_DIS_UDI_FLAG_AUTHORITY << 3))
+
+static uint8_t bt_dis_udi_merged[CONFIG_BT_DIS_STR_MAX * 4 + 1];
+
+static ssize_t read_udi(struct bt_conn *conn,
+			   const struct bt_gatt_attr *attr, void *buf,
+			   uint16_t len, uint16_t offset)
+{
+	size_t idx = 0;
+
+	bt_dis_udi_merged[idx++] = BT_DIS_UDI_FLAGS;
+
+	if (BT_DIS_UDI_FLAG_LABEL) 
+	{
+		size_t l = strlen(BT_DIS_UDI_LABEL_STR_REF) + 1;
+		memcpy(bt_dis_udi_merged + idx, BT_DIS_UDI_LABEL_STR_REF, l);
+		idx += l;
+	}
+
+	if (BT_DIS_UDI_FLAG_DI) 
+	{
+		size_t l = strlen(BT_DIS_UDI_DI_STR_REF) + 1;
+		memcpy(bt_dis_udi_merged + idx, BT_DIS_UDI_DI_STR_REF, l);
+		idx += l;
+	}
+
+	if (BT_DIS_UDI_FLAG_ISSUER) 
+	{
+		size_t l = strlen(BT_DIS_UDI_ISSUER_STR_REF) + 1;
+		memcpy(bt_dis_udi_merged + idx, BT_DIS_UDI_ISSUER_STR_REF, l);
+		idx += l;
+	}
+
+	if (BT_DIS_UDI_FLAG_AUTHORITY) 
+	{
+		size_t l = strlen(BT_DIS_UDI_AUTHORITY_STR_REF) + 1;
+		memcpy(bt_dis_udi_merged + idx, BT_DIS_UDI_AUTHORITY_STR_REF, l);
+		idx += l;
+	}
+
+	return bt_gatt_attr_read(conn, attr, buf, len, offset, &bt_dis_udi_merged,
+				 idx);
 }
 #endif
 
@@ -178,17 +240,17 @@ BT_GATT_SERVICE_DEFINE(dis_svc,
 #if defined(CONFIG_BT_DIS_UDI)
 	BT_GATT_CHARACTERISTIC(BT_UUID_UDI_FOR_MEDICAL_DEVICES,
 			       BT_GATT_CHRC_READ, BT_GATT_PERM_READ,
-			       read_str, NULL, BT_DIS_UDI_STR_REF),
+			       read_udi, NULL, NULL),
 #endif
 #if defined(CONFIG_BT_DIS_SYSTEM_ID)
 	BT_GATT_CHARACTERISTIC(BT_UUID_DIS_SYSTEM_ID,
 			       BT_GATT_CHRC_READ, BT_GATT_PERM_READ,
-			       read_str, NULL, BT_DIS_SYSTEM_ID_STR_REF),
+			       read_system_id, NULL, &dis_system_id),
 #endif
 #if defined(CONFIG_BT_DIS_IEEE_RCDL)
 	BT_GATT_CHARACTERISTIC(BT_UUID_GATT_IEEE_RCDL,
 			       BT_GATT_CHRC_READ, BT_GATT_PERM_READ,
-			       read_system_id, NULL, &dis_system_id),
+			       read_str, NULL, BT_DIS_IEEE_RCDL_STR_REF),
 #endif
 
 );
@@ -284,15 +346,54 @@ static int dis_set(const char *name, size_t len_rd,
 	}
 #endif
 #if defined(CONFIG_BT_DIS_UDI)
-	if (!strncmp(name, "udi", nlen)) {
-		len = read_cb(store, &dis_udi, sizeof(dis_udi) - 1);
+	if (!strncmp(name, "udi_label", nlen)) {
+		len = read_cb(store, &dis_udi_label, sizeof(dis_udi_label) - 1);
 		if (len < 0) {
-			LOG_ERR("Failed to read UDI for Medical Devices from storage"
+			LOG_ERR("Failed to read UDI Label from storage"
 				       " (err %zd)", len);
 		} else {
-			dis_udi[len] = '\0';
+			dis_udi_label[len] = '\0';
 
-			LOG_DBG("UDI for Medical Devices set to %s", dis_udi);
+			LOG_DBG("UDI Label set to %s", dis_udi_label);
+		}
+		return 0;
+	}
+
+	if (!strncmp(name, "udi_di", nlen)) {
+		len = read_cb(store, &dis_udi_di, sizeof(dis_udi_di) - 1);
+		if (len < 0) {
+			LOG_ERR("Failed to read UDI Device Identifier from storage"
+				       " (err %zd)", len);
+		} else {
+			dis_udi_di[len] = '\0';
+
+			LOG_DBG("UDI Device Identifier set to %s", dis_udi_di);
+		}
+		return 0;
+	}
+
+	if (!strncmp(name, "udi_issuer", nlen)) {
+		len = read_cb(store, &dis_udi_issuer, sizeof(dis_udi_issuer) - 1);
+		if (len < 0) {
+			LOG_ERR("Failed to read UDI Issuer from storage"
+				       " (err %zd)", len);
+		} else {
+			dis_udi_issuer[len] = '\0';
+
+			LOG_DBG("UDI Issuer set to %s", dis_udi_issuer);
+		}
+		return 0;
+	}
+
+	if (!strncmp(name, "udi_authority", nlen)) {
+		len = read_cb(store, &dis_udi_authority, sizeof(dis_udi_authority) - 1);
+		if (len < 0) {
+			LOG_ERR("Failed to read UDI Authority from storage"
+				       " (err %zd)", len);
+		} else {
+			dis_udi_authority[len] = '\0';
+
+			LOG_DBG("UDI Authority set to %s", dis_udi_authority);
 		}
 		return 0;
 	}

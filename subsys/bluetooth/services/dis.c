@@ -45,19 +45,15 @@ static struct dis_pnp dis_pnp_id = {
 };
 #endif
 
-#if CONFIG_BT_DIS_SYSTEM_ID
-#define SYSTEM_ID_OUI_SIZE 3
-#define SYSTEM_ID_IDENTIFIER_SIZE 5
-
-struct dis_system_id_t {
-	uint64_t system_id_oui : 24;
-	uint64_t system_id_identifier : 40;
-} __packed;
-
-static struct dis_system_id_t dis_system_id {
-	.system_id_oui = CONFIG_BT_DIS_OUI,
-	.system_id_identifier = CONFIG_BT_DIS_IDENTIFIER,
-};
+#if defined(CONFIG_BT_DIS_SYSTEM_ID)
+static uint8_t dis_system_id[8] = { (CONFIG_BT_DIS_SYSTEM_ID_OUI >> 16) & 0xFF, 
+									(CONFIG_BT_DIS_SYSTEM_ID_OUI >> 8) & 0xFF, 
+									(CONFIG_BT_DIS_SYSTEM_ID_OUI >> 0) & 0xFF,
+									(CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 32) & 0xFF,
+									(CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 24) & 0xFF,
+									(CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 16) & 0xFF,
+									(CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 8) & 0xFF,
+									(CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 0) & 0xFF };
 #endif
 
 #if defined(CONFIG_BT_DIS_SETTINGS)
@@ -145,7 +141,7 @@ static ssize_t read_system_id(struct bt_conn *conn,
 			   const struct bt_gatt_attr *attr, void *buf,
 			   uint16_t len, uint16_t offset)
 {
-	return bt_gatt_attr_read(conn, attr, buf, len, offset, &dis_system_id,
+	return bt_gatt_attr_read(conn, attr, buf, len, offset, dis_system_id,
 				 sizeof(dis_system_id));
 }
 #endif
@@ -245,7 +241,7 @@ BT_GATT_SERVICE_DEFINE(dis_svc,
 #if defined(CONFIG_BT_DIS_SYSTEM_ID)
 	BT_GATT_CHARACTERISTIC(BT_UUID_DIS_SYSTEM_ID,
 			       BT_GATT_CHRC_READ, BT_GATT_PERM_READ,
-			       read_system_id, NULL, &dis_system_id),
+			       read_system_id, NULL, NULL),
 #endif
 #if defined(CONFIG_BT_DIS_IEEE_RCDL)
 	BT_GATT_CHARACTERISTIC(BT_UUID_GATT_IEEE_RCDL,
@@ -400,22 +396,32 @@ static int dis_set(const char *name, size_t len_rd,
 #endif
 #if defined(CONFIG_BT_DIS_SYSTEM_ID)
 	if (!strncmp(name, "sysid_oui", nlen)) {
-		len = read_cb(store, &dis_system_id.system_id_oui, SYSTEM_ID_OUI_SIZE);
+		uint32_t oui = 0;
+		len = read_cb(store, &oui, sizeof(oui));
 		if (len < 0) {
 			LOG_ERR("Failed to read System ID OUI from storage"
 				       " (err %zd)", len);
 		} else {
-			LOG_DBG("System ID set to %06X", dis_system_id.system_id_oui);
+			dis_system_id[0] = (oui >> 16) & 0xFF;
+			dis_system_id[1] = (oui >> 8) & 0xFF;
+			dis_system_id[2] = (oui >> 0) & 0xFF;
+			LOG_DBG("System ID OUI set to %06X", oui);
 		}
 		return 0;
 	}
 	if (!strncmp(name, "sysid_identifier", nlen)) {
-		len = read_cb(store, &dis_system_id.system_id_identifier, SYSTEM_ID_IDENTIFIER_SIZE);
+		uint64_t identifier = 0;
+		len = read_cb(store, &identifier, sizeof(identifier));
 		if (len < 0) {
 			LOG_ERR("Failed to read System ID identifier from storage"
 				       " (err %zd)", len);
 		} else {
-			LOG_DBG("System ID set to %10X", dis_system_id.system_id_identifier);
+			dis_system_id[3] = (identifier >> 32) & 0xFF;
+			dis_system_id[4] = (identifier >> 24) & 0xFF;
+			dis_system_id[5] = (identifier >> 16) & 0xFF;
+			dis_system_id[6] = (identifier >> 8) & 0xFF;
+			dis_system_id[7] = (identifier >> 0) & 0xFF;
+			LOG_DBG("System ID identifier set to %10llX", identifier);
 		}
 		return 0;
 	}

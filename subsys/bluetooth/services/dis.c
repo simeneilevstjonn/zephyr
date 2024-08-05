@@ -49,11 +49,11 @@ static struct dis_pnp dis_pnp_id = {
 static uint8_t dis_system_id[8] = { (CONFIG_BT_DIS_SYSTEM_ID_OUI >> 16) & 0xFF, 
 									(CONFIG_BT_DIS_SYSTEM_ID_OUI >> 8) & 0xFF, 
 									(CONFIG_BT_DIS_SYSTEM_ID_OUI >> 0) & 0xFF,
-									(CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 32) & 0xFF,
-									(CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 24) & 0xFF,
-									(CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 16) & 0xFF,
-									(CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 8) & 0xFF,
-									(CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 0) & 0xFF };
+									((uint64_t)CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 32) & 0xFF,
+									((uint64_t)CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 24) & 0xFF,
+									((uint64_t)CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 16) & 0xFF,
+									((uint64_t)CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 8) & 0xFF,
+									((uint64_t)CONFIG_BT_DIS_SYSTEM_ID_IDENTIFIER >> 0) & 0xFF };
 #endif
 
 #if defined(CONFIG_BT_DIS_SETTINGS)

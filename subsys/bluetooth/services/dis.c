@@ -205,6 +205,7 @@ static ssize_t read_udi(struct bt_conn *conn, const struct bt_gatt_attr *attr, v
 	uint16_t index = sizeof(uint8_t);
 	if (offset == 0) {
 		buf_i[0] = BT_DIS_UDI_FLAGS;
+		bytes_read = 1U;
 	}
 
 	read_udi_subval(BT_DIS_UDI_LABEL_STR_REF, strlen(BT_DIS_UDI_LABEL_STR_REF), buf_i,

@@ -266,7 +266,7 @@ BT_GATT_SERVICE_DEFINE(
 
 #if defined(CONFIG_BT_DIS_SETTINGS)
 #if defined(CONFIG_BT_DIS_UDI)
-#define ADD_NULLTERM(x) (x > 0 ? x + sizeof('\0') : 0)
+#define DIS_STR_SIZE(x) ((x[0) != '\0' ? strlen(x) + sizeof('\0') : 0)
 static void dis_update_udi_value(const char *new, char *old, settings_read_cb read_cb,
 				 const char *logkey)
 {
@@ -275,10 +275,10 @@ static void dis_update_udi_value(const char *new, char *old, settings_read_cb re
 	 * The null-terminators are only present for strings that are in the flags.
 	 */
 	const size_t merged_size = sizeof(uint8_t) +
-				   ADD_NULLTERM(strlen(BT_DIS_UDI_LABEL_STR_REF)) +
-				   ADD_NULLTERM(strlen(BT_DIS_UDI_DI_STR_REF)) +
-				   ADD_NULLTERM(strlen(BT_DIS_UDI_ISSUER_STR_REF)) +
-				   ADD_NULLTERM(strlen(BT_DIS_UDI_AUTHORITY_STR_REF));
+				   DIS_STR_SIZE(BT_DIS_UDI_LABEL_STR_REF) +
+				   DIS_STR_SIZE(BT_DIS_UDI_DI_STR_REF) +
+				   DIS_STR_SIZE(BT_DIS_UDI_ISSUER_STR_REF) +
+				   DIS_STR_SIZE(BT_DIS_UDI_AUTHORITY_STR_REF);
 
 	size_t without_old = merged_size - ADD_NULLTERM(strlen(old));
 

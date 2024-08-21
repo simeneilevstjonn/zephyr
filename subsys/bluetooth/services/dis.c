@@ -285,10 +285,8 @@ static void dis_update_udi_value(const char *new, char *old, settings_read_cb re
 	bool valid = BT_ATT_MAX_ATTRIBUTE_LEN >= without_old + ADD_NULLTERM(strlen(new));
 
 	if (!valid) {
-		LOG_ERR("Failed to set UDI %s. Not enough space. The sum of the 4 DIS "
-			"UDI for "
-			"Medical Devices strings may not exceed the maximum attribute "
-			"length.",
+		LOG_ERR("Failed to set UDI %s. Not enough space. The sum of the 4 DIS UDI for "
+			"Medical Devices strings may not exceed the maximum attribute length.",
 			logkey);
 		return;
 	}

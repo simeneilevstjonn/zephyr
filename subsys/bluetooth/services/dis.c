@@ -295,8 +295,7 @@ static void dis_update_udi_value(const char *new, char *old, settings_read_cb re
 
 	int16_t len = read_cb((void *)new, (void *)old, CONFIG_BT_DIS_STR_MAX);
 	if (len < 0) {
-		LOG_ERR("Failed to read UDI %s from storage"
-			" (err %zd)",
+		LOG_ERR("Failed to read UDI %s from storage (err %zd)",
 			logkey, len);
 	} else {
 		old[len] = '\0';
